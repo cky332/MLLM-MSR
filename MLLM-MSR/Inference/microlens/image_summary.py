@@ -13,7 +13,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
 
 #model_id  = "lmms-lab/llama3-llava-next-8b"
 model_id = "llava-hf/llava-v1.6-mistral-7b-hf"
-model = LlavaNextForConditionalGeneration.from_pretrained(model_id,cache_dir = '/data1/share/.HF_cache/',attn_implementation="flash_attention_2", torch_dtype=torch.float16,
+model = LlavaNextForConditionalGeneration.from_pretrained(model_id,cache_dir = os.path.expanduser('~/.cache/huggingface/hub'),attn_implementation="flash_attention_2", torch_dtype=torch.float16,
                                                         #   device_map="auto"
                                                           ).eval()
 
@@ -29,12 +29,12 @@ def add_image_file_path(example):
     return example
 
 # img_dir = "../../inference_playground/microlens/microlens_50k_subset" #Change this to the real path of the image folder
-img_dir = "../../data/MicroLens-50k/MicroLens-50k_covers"
+img_dir = "/home/mlsnrs/data/cky/MLLM/MLLM-MSR/data/MicroLens-50k/MicroLens-50k_covers"
 dataset = load_dataset("imagefolder", data_dir=img_dir)
 dataset = dataset.map(lambda x: add_image_file_path(x))
 print(dataset)
 
-processor = AutoProcessor.from_pretrained(model_id, return_tensors=torch.float16)
+processor = AutoProcessor.from_pretrained(model_id, return_tensors="pt")
 
 
 def gpu_computation(batch, rank):
@@ -65,7 +65,7 @@ def gpu_computation(batch, rank):
     batch['image'] = padded_images
 
     # Your big GPU call goes here, for example:
-    model_inputs = processor([prompt for i in range(len(batch['image']))], batch['image'], return_tensors="pt",padding=True).to(device)
+    model_inputs = processor(text=[prompt for i in range(len(batch["image"]))], images=batch["image"], return_tensors="pt", padding=True).to(device)
 
     with torch.no_grad() and autocast():
         outputs = model.generate(**model_inputs, max_new_tokens=200)
