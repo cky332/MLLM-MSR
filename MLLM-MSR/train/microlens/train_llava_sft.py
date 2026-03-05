@@ -4,6 +4,7 @@ from lightning.pytorch.strategies import DeepSpeedStrategy
 import time
 
 os.environ["NCCL_DEBUG"] = "INFO"  # Enable NCCL debug output
+os.environ["NCCL_TIMEOUT"] = "1800000"  # 30 minutes in ms (default is 600s=10min)
 
 MAX_LENGTH = 2048
 EPOCH = 4
@@ -153,12 +154,25 @@ model = get_peft_model(model, lora_config)
 train_dataset = LlavaDataset2("MicroLens-50k-training-recurrent",  split="train", sort_json_key=False)
 val_dataset = LlavaDataset2("MicroLens-50k-training-recurrent", split="validation", sort_json_key=False)
 
+MAX_IMG_LONG_EDGE = 640  # Cap the longest edge to limit GPU memory usage
+
 def resize_image(image_list):
-    max_width = max(img.width for img in image_list)
-    max_height = max(img.height for img in image_list)
+    # Cap image dimensions to prevent OOM from very large images
+    capped_images = []
+    for img in image_list:
+        long_edge = max(img.width, img.height)
+        if long_edge > MAX_IMG_LONG_EDGE:
+            scale = MAX_IMG_LONG_EDGE / long_edge
+            new_w = int(img.width * scale)
+            new_h = int(img.height * scale)
+            img = img.resize((new_w, new_h))
+        capped_images.append(img)
+
+    max_width = max(img.width for img in capped_images)
+    max_height = max(img.height for img in capped_images)
 
     padded_images = []
-    for img in image_list:
+    for img in capped_images:
         if img.width == max_width and img.height == max_height:
             padded_images.append(img)
             continue
@@ -320,6 +334,8 @@ class LlavaModelPLModule(L.LightningModule):
 
     def on_train_epoch_start(self):
         dlog = self._get_dlog()
+        # Reclaim fragmented CUDA memory between epochs to prevent OOM
+        torch.cuda.empty_cache()
         alloc, reserved, free = get_gpu_mem_mb()
         dlog.info(f">>> EPOCH {self.current_epoch} START | gpu_alloc={alloc:.0f}MB | gpu_free={free:.0f}MB")
         self._epoch_start_time = time.time()
