@@ -17,28 +17,28 @@ def get_file_full_paths_and_names(folder_path):
             file_names.append(file_path.stem)  # 使用.stem获取不带扩展名的文件名
     return full_paths, file_names
 
-train_pair_file_path = "../../data/MicroLens-50k/Split/train_pairs.csv"
+train_pair_file_path = "/home/chenkuiyun/MLLM/MLLM-MSR/data/MicroLens-50k/Split/train_pairs.csv"
 df_train = pd.read_csv(train_pair_file_path)
 df_train['item'] = df_train['item'].astype(str)
 df_train['user'] = df_train['user'].astype(str)
 
-val_pair_file_path = "../../data/MicroLens-50k/Split/val_pairs.csv"
+val_pair_file_path = "/home/chenkuiyun/MLLM/MLLM-MSR/data/MicroLens-50k/Split/val_pairs.csv"
 df_val = pd.read_csv(val_pair_file_path)
 df_val['item'] = df_val['item'].astype(str)
 df_val['user'] = df_val['user'].astype(str)
 
 
-user_pref_file_path = "../../inference/Microlens/user_preference_recurrent.csv"
+user_pref_file_path = "/home/chenkuiyun/MLLM/user_preference_recurrent.csv"
 user_pref_df = pd.read_csv(user_pref_file_path, header=None, names=["user", "preference"])
 user_pref_df['user'] = user_pref_df['user'].astype(str)
 
 
-item_title_file_path = "../../data/MicroLens-50k/MicroLens-50k_titles.csv"
+item_title_file_path = "/home/chenkuiyun/MLLM/MLLM-MSR/data/MicroLens-50k/MicroLens-50k_titles.csv"
 item_title_df = pd.read_csv(item_title_file_path, header=None, names=["item", "title"])
 item_title_df['item'] = item_title_df['item'].astype(str)
 
 
-folder_path = "../../data/MicroLens-50k/MicroLens-50k_covers"
+folder_path = "/home/chenkuiyun/MLLM/MLLM-MSR/data/MicroLens-50k/MicroLens-50k_covers"
 file_paths, file_names = get_file_full_paths_and_names(folder_path)
 image_df = pd.DataFrame({"image": file_paths, "item": file_names})
 image_df['item'] = image_df['item'].astype(str)
@@ -71,12 +71,12 @@ df_val = df_val[['prompt', 'image', 'ground_truth']]
 
 train_dataset = Dataset.from_pandas(df_train)
 train_dataset = train_dataset.cast_column("image", Image())
-train_dataset = train_dataset.select(range(25000))
+train_dataset = train_dataset.select(range(min(25000, len(train_dataset))))
 train_dataset = train_dataset.shuffle(seed=2024)
 
 val_dataset = Dataset.from_pandas(df_val)
 val_dataset = val_dataset.cast_column("image", Image())
-val_dataset = val_dataset.select(range(1000))
+val_dataset = val_dataset.select(range(min(1000, len(val_dataset))))
 
 dataset = DatasetDict({"train": train_dataset, "validation": val_dataset})
 print(dataset)
