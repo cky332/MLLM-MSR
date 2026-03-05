@@ -4,6 +4,7 @@ from lightning.pytorch.strategies import DeepSpeedStrategy
 import time
 
 os.environ["NCCL_DEBUG"] = "INFO"  # Enable NCCL debug output
+os.environ["NCCL_TIMEOUT"] = "1800000"  # 30 minutes in ms (default is 600s=10min)
 
 MAX_LENGTH = 2048
 EPOCH = 4
@@ -320,6 +321,8 @@ class LlavaModelPLModule(L.LightningModule):
 
     def on_train_epoch_start(self):
         dlog = self._get_dlog()
+        # Reclaim fragmented CUDA memory between epochs to prevent OOM
+        torch.cuda.empty_cache()
         alloc, reserved, free = get_gpu_mem_mb()
         dlog.info(f">>> EPOCH {self.current_epoch} START | gpu_alloc={alloc:.0f}MB | gpu_free={free:.0f}MB")
         self._epoch_start_time = time.time()
