@@ -6,7 +6,7 @@ import os
 os.environ['CURL_CA_BUNDLE'] = ''
 os.environ["CUDA_VISIBLE_DEVICES"] = "2,3,4,5,6,7"
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+DATA_ROOT = "/home/chenkuiyun/MLLM"
 
 
 def get_file_full_paths_and_names(folder_path):
@@ -19,22 +19,22 @@ def get_file_full_paths_and_names(folder_path):
             file_names.append(file_path.stem)  # 使用.stem获取不带扩展名的文件名
     return full_paths, file_names
 
-pair_file_path = str(SCRIPT_DIR / "../../data/MicroLens-50k/Split/test_pairs.csv")
+pair_file_path = os.path.join(DATA_ROOT, "MLLM-MSR/data/MicroLens-50k/Split/test_pairs.csv")
 df = pd.read_csv(pair_file_path)
 df['item'] = df['item'].astype(str)
 df['user'] = df['user'].astype(str)
 
-user_pref_file_path = str(SCRIPT_DIR / "../../inference/Microlens/user_preference_recurrent.csv")
+user_pref_file_path = os.path.join(DATA_ROOT, "user_preference_recurrent.csv")
 user_pref_df = pd.read_csv(user_pref_file_path, header=None, names=["user", "preference"])
 user_pref_df['user'] = user_pref_df['user'].astype(str)
 
 
-item_title_file_path = str(SCRIPT_DIR / "../../data/MicroLens-50k/MicroLens-50k_titles.csv")
+item_title_file_path = os.path.join(DATA_ROOT, "MLLM-MSR/data/MicroLens-50k/MicroLens-50k_titles.csv")
 item_title_df = pd.read_csv(item_title_file_path, header=None, names=["item", "title"])
 item_title_df['item'] = item_title_df['item'].astype(str)
 
 
-folder_path = str(SCRIPT_DIR / "../../data/MicroLens-50k/MicroLens-50k_covers")
+folder_path = os.path.join(DATA_ROOT, "MLLM-MSR/data/MicroLens-50k/MicroLens-50k_covers")
 file_paths, file_names = get_file_full_paths_and_names(folder_path)
 image_df = pd.DataFrame({"image": file_paths, "item": file_names})
 image_df['item'] = image_df['item'].astype(str)
