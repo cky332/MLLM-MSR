@@ -78,7 +78,7 @@ def gpu_computation(batch, rank):
     batch['image'] = padded_images
 
     batch_size = len(batch['image'])
-    model_inputs = processor(batch['prompt'], batch['image'], return_tensors="pt", padding=True).to(device)
+    model_inputs = processor(text=batch['prompt'], images=batch['image'], return_tensors="pt", padding=True).to(device)
 
     with torch.no_grad() and autocast():
         outputs = model.generate(**model_inputs, max_new_tokens=30, return_dict_in_generate=True, output_scores=True)
